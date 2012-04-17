@@ -115,3 +115,38 @@ For the initial idea, read the [blog post][blog] about it.
 
 [blog]: http://fredericiana.com/2010/10/12/adding-support-for-stronger-password-hashes-to-django/
 
+Using django 1.4
+-------
+
+Do something like this in your django settings file:
+
+```python
+HMAC_KEYS = {
+    '2011-01-01': 'cheesecake',
+    '2012-01-01': 'foobar',
+}
+
+BASE_PASSWORD_HASHERS = (
+    'django_sha2.BcryptHMACPasswordHasher',
+    'django.contrib.auth.hashers.SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+    'django.contrib.auth.hashers.UnsaltedMD5PasswordHasher',
+)
+
+
+def get_password_hashers():
+    """
+    Returns the names of the dynamic and regular hashers
+    created in our hashers file
+    """
+    # Where is the bcrypt hashers file located?
+    hashers_base = 'django_sha2.{0}'
+    algo_name = lambda hmac_id: 'bcrypt{0}'.format(hmac_id.replace('-', '_'))
+
+    dynamic_hasher_names = [algo_name(key) for key in HMAC_KEYS.keys()]
+    dynamic_hashers = [hashers_base.format(k) for k in dynamic_hasher_names]
+
+    return dynamic_hashers + list(BASE_PASSWORD_HASHERS)
+
+PASSWORD_HASHERS = get_password_hashers()
+```
